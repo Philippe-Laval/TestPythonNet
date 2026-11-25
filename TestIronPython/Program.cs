@@ -9,6 +9,8 @@ namespace TestIronPython
         static void Main(string[] args)
         {
             Test1();
+            Test2();
+            Test3();
         }
 
         static void Test1()
@@ -33,18 +35,30 @@ namespace TestIronPython
             var engine = Python.CreateEngine();
             var scope = engine.CreateScope();
 
-            // Import .NET assembly
-            engine.Execute("import clr");
-            engine.Execute(@"clr.AddReference('DotNetLibrary.dll')");
+            // Load the referenced .NET assembly directly; this avoids DLL path-resolution issues
+            engine.Runtime.LoadAssembly(typeof(DotNetLibrary.Calculator).Assembly);
 
             // Create an instance of the Calculator class
-            engine.Execute("from DotNetLibrary import Calculator");
-            engine.Execute("calculator = Calculator()");
+            engine.Execute("from DotNetLibrary import Calculator", scope);
+            engine.Execute("calculator = Calculator()", scope);
 
             // Call the Add method
-            var result = engine.Execute<int>("calculator.Add(10, 5)");
+            // Note that we can setup a breakpoint in debugger in the Add method.
+            var result = engine.Execute<int>("calculator.Add(10, 5)", scope);
 
             Console.WriteLine($"10 + 5 = {result}");
         }
+
+        static void Test3()
+        {
+            using var httpClient = new System.Net.Http.HttpClient();
+            var content = httpClient
+                .GetStringAsync("https://jsonplaceholder.typicode.com/posts/1")
+                .GetAwaiter()
+                .GetResult();
+
+            Console.WriteLine(content);
+        }
+
     }
 }
