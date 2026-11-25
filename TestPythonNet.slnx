@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="DotNetLibrary/DotNetLibrary.csproj" />
+  <Project Path="PolyglotSql/PolyglotSql.csproj" />
+  <Project Path="PythonNetWebApi/PythonNetWebApi.csproj" />
+  <Project Path="TestIronPython/TestIronPython.csproj" />
+  <Project Path="TestPythonNet/TestPythonNet.csproj" />
+</Solution>

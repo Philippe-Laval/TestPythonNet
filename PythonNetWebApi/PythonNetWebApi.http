@@ -1,0 +1,16 @@
+@PythonNetWebApi_HostAddress = http://localhost:5281
+
+GET {{PythonNetWebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+Post {{PythonNetWebApi_HostAddress}}/api/sql/transpile
+Accept: application/json
+Content-Type: application/json
+
+{
+  "Sql": "SELECT * FROM table",
+  "FromDialect": "mysql",
+  "ToDialect": "postgres"
+}

@@ -1,0 +1,50 @@
+﻿using System;
+using IronPython.Hosting;
+using Microsoft.Scripting.Hosting;
+
+namespace TestIronPython
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Test1();
+        }
+
+        static void Test1()
+        {
+            // Create a Python engine
+            var engine = Python.CreateEngine();
+
+            // Execute Python code
+            var scope = engine.CreateScope();
+            engine.Execute("x = 5", scope);
+            engine.Execute("result = x**2", scope);
+
+            // Retrieve the result from Python
+            dynamic result = scope.GetVariable("result");
+
+            // Print the result
+            Console.WriteLine($"The square of 5 is {result}");
+        }
+
+        static void Test2()
+        {
+            var engine = Python.CreateEngine();
+            var scope = engine.CreateScope();
+
+            // Import .NET assembly
+            engine.Execute("import clr");
+            engine.Execute(@"clr.AddReference('DotNetLibrary.dll')");
+
+            // Create an instance of the Calculator class
+            engine.Execute("from DotNetLibrary import Calculator");
+            engine.Execute("calculator = Calculator()");
+
+            // Call the Add method
+            var result = engine.Execute<int>("calculator.Add(10, 5)");
+
+            Console.WriteLine($"10 + 5 = {result}");
+        }
+    }
+}
