@@ -17,4 +17,16 @@
     </None>
   </ItemGroup>
 
+	<ItemGroup>
+		<None Include="python-embed\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	
+	<ItemGroup>
+		<Content Include="PythonFiles\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	
 </Project>

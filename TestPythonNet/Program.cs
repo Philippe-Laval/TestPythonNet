@@ -17,6 +17,8 @@ namespace TestPythonNet
             PythonEngine.BeginAllowThreads();
 
             PythonNetExample example = new PythonNetExample();
+            example.Test1();
+            example.Test3();
             example.ExecutePythonCode();
             example.ExecuteSqlglot2();
             example.ExecuteSqlglot();
