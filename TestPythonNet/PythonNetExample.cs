@@ -466,6 +466,349 @@ result = x + y
             }
         }
 
+        public void TestImportName()
+        {
+            /*
+             * Python equivalent:
+import math
+result = math.sqrt(25)
+             */
+
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                // Imports a Python module by its name
+                using var math = scope.Import("math");
+
+                double result = scope.Eval<double>("math.sqrt(25)");
+
+                Console.WriteLine(result); // 5
+            }
+
+            /*
+             * Python equivalent:
+import math as m
+result = m.sqrt(25)
+             */
+
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                // Imports a Python module by its name and assigns it to a alias
+                using PyObject? math = scope.Import("math", "m");
+
+                double result = scope.Eval<double>("m.sqrt(25)");
+
+                Console.WriteLine(result); // 5
+            }
+        }
+
+        /// <summary>
+        /// Imports an existing PyModule into another scope under a given name.
+        /// This is useful for creating your own reusable Python modules directly from C#.
+        /// The advantage is that you don't need a physical calculator.py file
+        /// </summary>
+        public void TestImportPyModule()
+        {
+            using (Py.GIL())
+            {
+                using var module = Py.CreateScope("calculator");
+
+                module.Exec(
+"""
+def add(a, b):
+    return a + b
+
+def multiply(a, b):
+    return a * b
+""");
+
+                // Create another scope
+                using var scope = Py.CreateScope();
+
+                scope.Import(module, "calc");
+
+                int sum = scope.Eval<int>("calc.add(10, 20)");
+                int product = scope.Eval<int>("calc.multiply(10, 20)");
+
+                Console.WriteLine(sum);     // 30
+                Console.WriteLine(product); // 200
+            }
+        }
+
+
+        public void TestImportPyObject()
+        {
+            using (Py.GIL())
+            {
+                using PyObject math = Py.Import("math");
+
+                using var scope1 = Py.CreateScope();
+                using var scope2 = Py.CreateScope();
+
+                scope1.Import(math, "m");
+                scope2.Import(math, "math");
+
+                double result1 = scope1.Eval<double>("m.sqrt(16)");
+                double result2 = scope2.Eval<double>("math.sqrt(81)");
+
+                Console.WriteLine(result1); // 4
+                Console.WriteLine(result2); // 9
+            }
+
+
+            using (Py.GIL())
+            {
+                using PyObject module = Py.Import("math");
+                using var scope = Py.CreateScope();
+
+                // Without an alias, the module's own name is used
+                scope.Import(module);
+
+                double result = scope.Eval<double>("math.sqrt(100)");
+
+                Console.WriteLine(result); // 10
+            }
+        }
+
+        public void TestImportAll()
+        {
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                using PyObject math = Py.Import("math");
+
+                // Equivalent to "from math import *" in Python
+                // However, ImportAll() actually copies all module dictionary entries,
+                // including private and special variables, unlike Python's wildcard import
+                scope.ImportAll(math);
+
+                // Notice that you can call sqrt() directly instead of math.sqrt().
+                double result = scope.Eval<double>("sqrt(25)");
+
+                Console.WriteLine(result); // 5
+            }
+        }
+
+
+
+        /// <summary>
+        /// Basic example: C# → Python → C#
+        /// </summary>
+        public void TestPyBuffer()
+        {
+            /*
+            Python.Runtime.PyBuffer is useful when you need to exchange binary data, images, 
+            numerical arrays or other large buffers between C# and Python without converting 
+            every element individually into a Python object.
+
+            A typical workflow is:
+            1. C# creates a byte[] containing data.
+            2. C# transfers the data into a Python buffer.
+            3. Python processes the buffer in place.
+            4. C# retrieves the modified data using PyBuffer.
+            The important distinction is that PyBuffer provides C# access to an existing Python buffer 
+            through the Python buffer protocol. It is not itself a buffer allocator.
+             */
+
+            byte[] input = { 0, 50, 100, 200, 255 };
+            byte[] output = new byte[input.Length];
+
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                // 1. Allocate a Python bytearray
+                scope.Set("size", input.Length);
+                scope.Exec("buffer = bytearray(size)");
+
+                // 2. Retrieve the Python object
+                using PyObject pyArray = scope.Get("buffer");
+
+                // 3. Get access to its underlying memory
+                using PyBuffer pyBuffer = pyArray.GetBuffer();
+
+                // 4. Copy C# data into Python memory
+                pyBuffer.Write(input, 0, input.Length, 0);
+
+                // 5. Process the buffer in Python (in place)
+                scope.Exec(
+"""
+for i in range(len(buffer)):
+    buffer[i] = 255 - buffer[i]
+""");
+
+                // 6. Copy Python data back into C#
+                pyBuffer.Read(output, 0, output.Length, 0);
+            }
+
+            Console.WriteLine(string.Join(", ", input));
+            Console.WriteLine(string.Join(", ", output));
+        }
+
+        /// <summary>
+        /// Échange un tableau de valeurs `double` entre C# et un tableau NumPy via un tampon brut, applique des calculs
+        /// NumPy en place, puis récupère les résultats en `double[]`.
+        /// </summary>
+        /// <remarks>Utilise `Buffer.BlockCopy` pour convertir entre `double[]` et `byte[]`, puis
+        /// `PyBuffer.Write`/`PyBuffer.Read` pour transférer les données. Nécessite NumPy (`float64`) dans
+        /// l’environnement Python.</remarks>
+        public void TestBufferWithNumpy()
+        {
+            /*
+More useful example: exchanging a double[] with NumPy
+If you are working with numerical computations, signal processing or scientific data, you probably want to exchange arrays of double, float or int instead of bytes.
+
+Since PyBuffer.Write() and PyBuffer.Read() operate on byte[], you can use Buffer.BlockCopy() to convert between raw bytes and numerical arrays.
+
+Install NumPy in your Python environment:
+pip install numpy 
+ */
+
+            double[] input = { 1.5, 2.5, 3.5, 4.5 };
+            double[] output = new double[input.Length];
+
+            int byteCount = input.Length * sizeof(double);
+
+            byte[] rawData = new byte[byteCount];
+
+            // Convert double[] to raw bytes
+            Buffer.BlockCopy(input, 0, rawData, 0, byteCount);
+
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                // Allocate a NumPy array
+                scope.Set("size", input.Length);
+
+                scope.Exec(@"
+import numpy as np
+
+data = np.zeros(size, dtype=np.float64)
+");
+
+                using PyObject pyArray = scope.Get("data");
+                using PyBuffer pyBuffer = pyArray.GetBuffer();
+
+                // C# -> NumPy
+                pyBuffer.Write(rawData, 0, byteCount, 0);
+
+                // NumPy computation in place
+                scope.Exec(
+"""
+data *= 2
+data += 10
+""");
+
+                // NumPy -> C#
+                pyBuffer.Read(rawData, 0, byteCount, 0);
+            }
+
+            // Convert raw bytes back to double[]
+            Buffer.BlockCopy(rawData, 0, output, 0, byteCount);
+
+            Console.WriteLine(string.Join(", ", output));
+        }
+
+        public void TestBufferWithNumpyAndSpan()
+        {
+            /*
+             Here is a complete example using PyBuffer and Span<double> to exchange data between C# and Python using shared memory, without intermediate byte[] arrays.
+
+            In this example:
+            - Python allocates a NumPy array.
+            - C# accesses its memory directly through a Span<double>.
+            - C# writes values into the buffer.
+            - Python modifies the values in place.
+            - C# reads the modified values directly from the same memory.
+             */
+
+            try
+            {
+                using (Py.GIL())
+                {
+                    using var scope = Py.CreateScope();
+
+                    // 1. Allocate a buffer in Python
+                    scope.Exec(
+"""
+import numpy as np
+
+data = np.zeros(5, dtype=np.float64)
+""");
+
+                    // 2. Get the Python object
+                    using PyObject pyArray = scope.Get("data");
+
+                    // 3. Get access to Python memory
+                    using PyBuffer buffer = pyArray.GetBuffer();
+
+                    // 4. Validate the buffer
+                    if (buffer.ReadOnly ||
+                        !buffer.IsContiguous(BufferOrderStyle.C) ||
+                        buffer.ItemSize != sizeof(double) ||
+                        buffer.Length != 5 * sizeof(double))
+                    {
+                        throw new InvalidOperationException(
+                            "Invalid Python buffer");
+                    }
+
+                    // 5. Create a Span over Python memory
+                    Span<double> span;
+                    unsafe
+                    {
+                        span = new Span<double>(
+                            buffer.Buffer.ToPointer(),
+                            5
+                        );
+                    }
+
+                    // 6. Write data directly from C#
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        span[i] = i + 1;
+                    }
+
+                    // 7. Process data in Python
+                    scope.Exec(@"
+data *= 2
+data += 10
+");
+
+                    // 8. Read the result directly from C#
+                    Console.WriteLine("C# reads:");
+
+                    foreach (double value in span)
+                    {
+                        Console.WriteLine(value);
+                    }
+
+                    // 9. Modify the buffer again from C#
+                    span[0] = 999;
+
+                    // 10. Verify that Python sees the modification
+                    double first = scope.Eval<double>(
+                        "float(data[0])"
+                    );
+
+                    Console.WriteLine($"Python reads: {first}");
+                }
+            }
+            catch(PythonException ex)
+            {
+                Console.WriteLine("An error occurred while executing Python code:");
+                Console.WriteLine(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An unexpected error occurred:");
+                Console.WriteLine(ex.Message);
+            }
+        }
 
         public void Test3()
         {
@@ -498,6 +841,8 @@ result = x + y
                 }
             }
         }
+
+        
 
 
         public void ExecutePythonCode()

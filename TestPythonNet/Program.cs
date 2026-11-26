@@ -31,6 +31,17 @@ namespace TestPythonNet
 
             example.TestNewScope();
 
+            example.TestImportName();
+            example.TestImportPyModule();
+            example.TestImportPyObject();
+
+            example.TestImportAll();
+
+            example.TestPyBuffer();
+            example.TestBufferWithNumpy();
+            example.TestBufferWithNumpyAndSpan();
+
+
             example.Test1();
             example.Test3();
             example.ExecutePythonCode();
