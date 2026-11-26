@@ -13,6 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="measurement.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="pythonExample.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
