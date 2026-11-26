@@ -16,14 +16,20 @@ namespace TestPythonNet
             PythonEngine.Initialize();
             PythonEngine.BeginAllowThreads();
             // Enable GIL debugging assistance
-            PythonEngine.DebugGIL = true;
+            //PythonEngine.DebugGIL = true;
 
             PythonNetExample example = new PythonNetExample();
 
-            example.TestExec();
-            example.TestEval();
             example.TestPyTuple();
             example.TestPyList();
+
+            example.TestExec();
+            example.TestEval();
+
+            example.TestExecuteWithEval();
+            example.TestExecuteWithFile();
+
+            example.TestNewScope();
 
             example.Test1();
             example.Test3();

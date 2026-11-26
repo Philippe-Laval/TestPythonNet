@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Python.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using Python.Runtime;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 // https://github.com/pythonnet/pythonnet#embedding-python-in-net
 
@@ -238,6 +239,230 @@ namespace TestPythonNet
                     double? result2 = scope.Eval<double?>(code, locals);
                     Console.WriteLine($"Result of evaluating '{code}': {result2}");
                 }
+            }
+        }
+
+        public void TestExecuteWithEval()
+        {
+            // Simple mathematical expression
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                // In Python.NET, RunFlagType.File and RunFlagType.Eval determine how Python code is compiled and what it returns when executed from C#.
+                // -RunFlagType.Eval: Evaluates a Python expression and returns its value.
+                // -RunFlagType.File: Executes Python statements, just like running a .py file.
+
+                using var script = PythonEngine.Compile(
+                    "10 + 20 * 2",
+                    mode: RunFlagType.Eval
+                );
+
+                int result = scope.Execute<int>(script);
+
+                Console.WriteLine(result);
+            }
+
+            // Expression with variables
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                scope.Set("x", 10);
+                scope.Set("y", 20);
+
+                using var script = PythonEngine.Compile(
+                    "x + y",
+                    mode: RunFlagType.Eval
+                );
+
+                int result = scope.Execute<int>(script);
+
+                Console.WriteLine(result); // 30
+            }
+
+            // Conditional expression
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                scope.Set("x", 15);
+
+                using var script = PythonEngine.Compile(
+                    "'Positive' if x > 0 else 'Negative or zero'",
+                    mode: RunFlagType.Eval
+                );
+
+                string result = scope.Execute<string>(script);
+
+                Console.WriteLine(result); // Positive
+            }
+
+            // List comprehension
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                using var script = PythonEngine.Compile(
+                    "[x ** 2 for x in range(5)]",
+                    mode: RunFlagType.Eval
+                );
+
+                using var result = scope.Execute(script);
+
+                Console.WriteLine(result.ToString());
+                // [0, 1, 4, 9, 16]
+            }
+        }
+
+        public void TestExecuteWithFile()
+        {
+            using (Py.GIL())
+            {
+                using (var scope = Py.CreateScope())
+                {
+                    string code = """
+x = 10
+y = 20
+result = x + y
+""";
+
+                    using var script = PythonEngine.Compile(
+                        code,
+                        mode: RunFlagType.File
+                    );
+
+                    using var executionResult = scope.Execute(script);
+
+                    int result = scope.Get<int>("result");
+
+                    Console.WriteLine(result); // 30
+                }
+            }
+
+            // Unlike Eval, File returns Python None.
+            // The calculated result must be retrieved from the scope
+            using (Py.GIL())
+            {
+                using (var scope = Py.CreateScope())
+                {
+                    string code = 
+                        """
+                        result = 0
+
+                        for i in range(1, 6):
+                            result += i
+                        """;
+
+                    using var script = PythonEngine.Compile(
+                        code,
+                        mode: RunFlagType.File
+                    );
+
+                    using var executionResult = scope.Execute(script);
+
+                    int result = scope.Get<int>("result");
+
+                    Console.WriteLine(result); // 15
+                }
+            }
+
+            // Function definition and import
+            using (Py.GIL())
+            {
+                using (var scope = Py.CreateScope())
+                {
+                    string code = 
+                    """
+                    import math
+
+                    def calculate(x):
+                        return math.sqrt(x) * 2
+
+                    result = calculate(25)
+                    """;
+
+                    using var script = PythonEngine.Compile(
+                        code,
+                        mode: RunFlagType.File
+                    );
+
+                    using var executionResult = scope.Execute(script);
+
+                    double result = scope.Get<double>("result");
+
+                    Console.WriteLine(result); // 10
+                }
+            }
+
+            // Combining File and Eval in the same scope
+            // You can use File to initialize variables, import modules and define functions,
+            // then use Eval to evaluate expressions within the same scope.
+            //
+            // This is particularly useful when you want to initialize a Python environment once
+            // and evaluate expressions repeatedly from C#.
+
+            using (Py.GIL())
+            {
+                using (var scope = Py.CreateScope())
+                {
+                    string code =
+                    """
+                    import math
+
+                    factor = 10
+
+                    def calculate(x):
+                        return math.sqrt(x) * factor
+                    """;
+
+                    // Initialize Python environment
+                    using var initScript = PythonEngine.Compile(code,
+                        mode: RunFlagType.File
+                    );
+
+                    using var initResult = scope.Execute(initScript);
+
+                    // Compile an expression
+                    using var evalScript = PythonEngine.Compile(
+                        "calculate(x)",
+                        mode: RunFlagType.Eval
+                    );
+
+                    // Execute multiple times
+                    scope.Set("x", 25);
+                    Console.WriteLine(scope.Execute<double>(evalScript)); // 50
+
+                    scope.Set("x", 100);
+                    Console.WriteLine(scope.Execute<double>(evalScript)); // 100
+                }
+            }
+        }
+
+        public void TestNewScope()
+        {
+            using (Py.GIL())
+            {
+                using var scope = Py.CreateScope();
+
+                scope.Exec(
+                    """
+                    factor = 10
+
+                    def square(x):
+                        return x ** 2
+                    """);
+
+                using var newScope = scope.NewScope();
+
+                int result = newScope.Eval<int>("square(5) * factor");
+
+                Console.WriteLine(result); // 250
+
+                newScope.Exec("factor = 20");
+
+                Console.WriteLine(scope.Get<int>("factor"));    // 10
+                Console.WriteLine(newScope.Get<int>("factor")); // 20
             }
         }
 
