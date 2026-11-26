@@ -104,7 +104,7 @@ namespace TestPythonNet
             }
         }
 
-        public void TestScope()
+        public void TestExec()
         {
             using (Py.GIL())
             {
@@ -122,6 +122,10 @@ namespace TestPythonNet
                 var items2 = new PyObject[] { new PyInt(1), new PyFloat(2.5), new PyString("test") };
                 PyTuple pyTuple = new PyTuple(items2);
 
+                PyDict pyDict = new PyDict();
+                pyDict.SetItem("key1", new PyFloat(1.1));
+                pyDict.SetItem("key2", new PyInt(1));
+
                 using (PyModule scope = Py.CreateScope())
                 {
                     scope.Set("my_int", pyInt);
@@ -129,6 +133,7 @@ namespace TestPythonNet
                     scope.Set("my_float", pyFloat);
                     scope.Set("my_list", pyList);
                     scope.Set("my_tuple", pyTuple);
+                    scope.Set("my_dict", pyDict);
 
                     string code = """
 
@@ -141,6 +146,8 @@ namespace TestPythonNet
                         my_int = 123
 
                         """;
+
+                    
 
                     PyDict locals = new PyDict();
 
@@ -190,6 +197,46 @@ namespace TestPythonNet
                     
 
                     PyDict variables = scope.Variables();
+                }
+            }
+        }
+
+        public void TestEval()
+        {
+            using (Py.GIL())
+            {
+                PyInt pyInt = new PyInt(10L);
+                PyFloat pyFloat = new PyFloat(3.14);
+
+                using (PyModule scope = Py.CreateScope())
+                {
+                    scope.Set("my_int", pyInt);
+                    scope.Set("my_float", pyFloat);
+
+                    // Using variables
+                    string code = "my_float + my_int";
+
+                    PyObject result = scope.Eval(code);
+                    Console.WriteLine($"Result of evaluating '{code}': {result}");
+
+                    result = scope.Eval("10 * 5");
+                    result = scope.Eval("2 ** 3");
+                    result = scope.Eval("10 > 5");
+                    result = scope.Eval("len('hello')");
+
+                    PyDict locals = new PyDict();
+                    locals.SetItem("local1", new PyInt(5));
+                    locals.SetItem("local2", new PyFloat(5.1));
+
+                    code = "my_float + my_int + local1 + local2";
+
+                    // 23.24
+                    result = scope.Eval(code, locals);
+                    Console.WriteLine($"Result of evaluating '{code}': {result}");
+
+                    // 23,24 (French locale)
+                    double? result2 = scope.Eval<double?>(code, locals);
+                    Console.WriteLine($"Result of evaluating '{code}': {result2}");
                 }
             }
         }

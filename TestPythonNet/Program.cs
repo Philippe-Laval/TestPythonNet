@@ -20,7 +20,8 @@ namespace TestPythonNet
 
             PythonNetExample example = new PythonNetExample();
 
-            example.TestScope();
+            example.TestExec();
+            example.TestEval();
             example.TestPyTuple();
             example.TestPyList();
 
