@@ -23,6 +23,19 @@ namespace TestPythonNet
             example.TestPyTuple();
             example.TestPyList();
 
+            example.TestPySequence1();
+            example.TestPySequence2();
+            example.TestPySequence3();
+            example.TestPySequence4();
+            example.TestPySequence5();
+            example.TestPySequence6();
+            example.TestPySequence7();
+            example.TestPySequence8();
+            example.TestPySequence9();
+            example.TestPySequence10();
+            example.TestPySequence11();
+            example.TestPySequence12();
+
             example.TestExec();
             example.TestEval();
 
