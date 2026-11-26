@@ -668,50 +668,83 @@ Install NumPy in your Python environment:
 pip install numpy 
  */
 
-            double[] input = { 1.5, 2.5, 3.5, 4.5 };
-            double[] output = new double[input.Length];
-
-            int byteCount = input.Length * sizeof(double);
-
-            byte[] rawData = new byte[byteCount];
-
-            // Convert double[] to raw bytes
-            Buffer.BlockCopy(input, 0, rawData, 0, byteCount);
-
-            using (Py.GIL())
+            try
             {
-                using var scope = Py.CreateScope();
+                double[] input = { 1.5, 2.5, 3.5, 4.5 };
+                double[] output = new double[input.Length];
 
-                // Allocate a NumPy array
-                scope.Set("size", input.Length);
+                int byteCount = input.Length * sizeof(double);
 
-                scope.Exec(@"
+                byte[] rawData = new byte[byteCount];
+
+                // Convert double[] to raw bytes
+                Buffer.BlockCopy(input, 0, rawData, 0, byteCount);
+
+                using (Py.GIL())
+                {
+                    using var scope = Py.CreateScope();
+
+                    // Allocate a NumPy array
+                    scope.Set("size", input.Length);
+
+                    // Allocate a buffer in Python
+                    scope.Exec(@"
 import numpy as np
 
-data = np.zeros(size, dtype=np.float64)
+data = np.frombuffer(bytearray(size * 8), dtype=np.float64)
+raw = data.base
 ");
+                    // Get the Python object
+                    using PyObject pyArray = scope.Get("raw");
+                    // Get access to Python memory
+                    using PyBuffer pyBuffer = pyArray.GetBuffer();
 
-                using PyObject pyArray = scope.Get("data");
-                using PyBuffer pyBuffer = pyArray.GetBuffer();
+                    // Validate the buffer
+                    if (pyBuffer.ReadOnly ||
+                        !pyBuffer.IsContiguous(BufferOrderStyle.C) ||
+                        pyBuffer.ItemSize != sizeof(byte) ||
+                        pyBuffer.Length != input.Length * sizeof(double))
+                    {
+                        throw new InvalidOperationException(
+                            "Invalid Python buffer");
+                    }
 
-                // C# -> NumPy
-                pyBuffer.Write(rawData, 0, byteCount, 0);
+                    // C# -> NumPy
+                    pyBuffer.Write(rawData, 0, byteCount, 0);
 
-                // NumPy computation in place
-                scope.Exec(
+                    // NumPy computation in place
+                    //
+                    // Correct — modifies the existing buffer: data *= 2
+                    // Incorrect — creates a new array and discards the original: data = data * 2
+                    //
+                    // In the second case, the C# span still points to the original buffer, not the newly created NumPy array.
+                    // Also, never access the span after disposing of the PyBuffer, and avoid concurrent access to the shared memory without synchronization.
+
+                    scope.Exec(
 """
 data *= 2
 data += 10
 """);
 
-                // NumPy -> C#
-                pyBuffer.Read(rawData, 0, byteCount, 0);
+                    // NumPy -> C#
+                    pyBuffer.Read(rawData, 0, byteCount, 0);
+                }
+
+                // Convert raw bytes back to double[]
+                Buffer.BlockCopy(rawData, 0, output, 0, byteCount);
+
+                Console.WriteLine(string.Join(", ", output));
             }
-
-            // Convert raw bytes back to double[]
-            Buffer.BlockCopy(rawData, 0, output, 0, byteCount);
-
-            Console.WriteLine(string.Join(", ", output));
+            catch (PythonException ex)
+            {
+                Console.WriteLine("An error occurred while executing Python code:");
+                Console.WriteLine(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An unexpected error occurred:");
+                Console.WriteLine(ex.Message);
+            }
         }
 
         public void TestBufferWithNumpyAndSpan()
@@ -738,11 +771,12 @@ data += 10
 """
 import numpy as np
 
-data = np.zeros(5, dtype=np.float64)
+data = np.frombuffer(bytearray(5 * 8), dtype=np.float64)
+raw = data.base
 """);
 
-                    // 2. Get the Python object
-                    using PyObject pyArray = scope.Get("data");
+                    // 2. Get the underlying bytearray (shares memory with the NumPy array)
+                    using PyObject pyArray = scope.Get("raw");
 
                     // 3. Get access to Python memory
                     using PyBuffer buffer = pyArray.GetBuffer();
@@ -750,7 +784,6 @@ data = np.zeros(5, dtype=np.float64)
                     // 4. Validate the buffer
                     if (buffer.ReadOnly ||
                         !buffer.IsContiguous(BufferOrderStyle.C) ||
-                        buffer.ItemSize != sizeof(double) ||
                         buffer.Length != 5 * sizeof(double))
                     {
                         throw new InvalidOperationException(
@@ -808,6 +841,108 @@ data += 10
                 Console.WriteLine("An unexpected error occurred:");
                 Console.WriteLine(ex.Message);
             }
+        }
+
+
+        public void TestBufferWithNumpyAndSpan2()
+        {
+            /*
+             Here is a complete example using PyBuffer and Span<double> to exchange data between C# and Python using shared memory, without intermediate byte[] arrays.
+
+            In this example:
+            - Python allocates a NumPy array.
+            - C# accesses its memory directly through a Span<double>.
+            - C# writes values into the buffer.
+            - Python modifies the values in place.
+            - C# reads the modified values directly from the same memory.
+             */
+
+            try
+            {
+                using (Py.GIL())
+                {
+                    using var scope = Py.CreateScope();
+
+                    // 1. Allocate a buffer in Python
+                    scope.Exec(
+"""
+import numpy as np
+
+data = np.frombuffer(bytearray(5 * 8), dtype=np.float64)
+raw = data.base
+""");
+
+                    // 2. Get the underlying bytearray (shares memory with the NumPy array)
+                    using PyObject pyArray = scope.Get("raw");
+
+                    using PyBuffer buffer = pyArray.GetBuffer();
+
+                    Span<double> span = AsSpan<double>(buffer);
+
+                    span.Fill(42.0);
+
+                    scope.Exec("data *= 2");
+
+                    Console.WriteLine(span[0]); // 84
+
+                }
+            }
+            catch (PythonException ex)
+            {
+                Console.WriteLine("An error occurred while executing Python code:");
+                Console.WriteLine(ex.Message);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An unexpected error occurred:");
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+
+/*
+C# Span type	NumPy dtype	Bytes per element
+Span<byte>	    np.uint8	1
+Span<short>	    np.int16	2
+Span<int>	    np.int32	4
+Span<long>	    np.int64	8
+Span<float>	    np.float32	4
+Span<double>	np.float64	8
+ */
+
+        /// <summary>
+        /// The helper checks memory layout and element size, 
+        /// but the caller must still ensure that the actual Python data type matches T. 
+        /// For example, an int64 and a float64 have the same element size but different 
+        /// binary representations.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="buffer"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static unsafe Span<T> AsSpan<T>(PyBuffer buffer) where T : unmanaged
+        {
+            if (buffer.ReadOnly)
+                throw new InvalidOperationException(
+                    "Buffer is read-only");
+
+            if (!buffer.IsContiguous(BufferOrderStyle.C))
+                throw new InvalidOperationException(
+                    "Buffer is not contiguous");
+
+            //if (buffer.ItemSize != sizeof(T))
+            //    throw new InvalidOperationException(
+            //        "Incompatible element size");
+
+            if (buffer.Length % sizeof(T) != 0)
+                throw new InvalidOperationException(
+                    "Invalid buffer length");
+
+            return new Span<T>(
+                buffer.Buffer.ToPointer(),
+                checked((int)(buffer.Length / sizeof(T)))
+            );
         }
 
         public void Test3()

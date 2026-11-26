@@ -40,6 +40,7 @@ namespace TestPythonNet
             example.TestPyBuffer();
             example.TestBufferWithNumpy();
             example.TestBufferWithNumpyAndSpan();
+            example.TestBufferWithNumpyAndSpan2();
 
 
             example.Test1();
