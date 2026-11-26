@@ -15,7 +15,7 @@ using Python.Runtime;
 // These classes include PyObject, PyList, PyDict, PyTuple
 // https://pythonnet.github.io/pythonnet/reference.html
 // https://pythonnet.github.io/pythonnet/reference.html#class-Python.Runtime.PyModule
-
+// https://pythonnet.github.io/pythonnet/reference.html#class-Python.Runtime.PyDict
 
 namespace TestPythonNet
 {
@@ -41,6 +41,8 @@ namespace TestPythonNet
                 // Call the AddInPython method
                 int result = calculator.AddInPython(5, 10);
                 Console.WriteLine($"Result of adding in Python: {result}");
+
+              
 
             }
         }
@@ -69,6 +71,130 @@ namespace TestPythonNet
             }
         }
 
+        public void TestPyTuple()
+        {
+            using (Py.GIL())
+            {
+                var items = new PyObject[] { new PyInt(1), new PyFloat(2.5), new PyString("test") };
+                PyTuple pyTuple = new PyTuple(items);
+                bool isTuple = PyTuple.IsTupleType(pyTuple);
+                Console.WriteLine($"Is pyTuple a tuple? {isTuple}");
+
+                PyTuple typel2 = PyTuple.AsTuple(pyTuple);
+            }
+        }
+
+        public void TestPyList()
+        {
+            using (Py.GIL())
+            {
+                var items = new PyObject[] { new PyInt(1), new PyInt(2), new PyInt(3) };
+                PyList pyList = new PyList(items);
+                bool isList = PyList.IsListType(pyList);
+                Console.WriteLine($"Is pyList a list? {isList}");
+
+                pyList.Append(new PyInt(4));
+                pyList.Insert(0, new PyInt(0));
+                pyList.Reverse();
+
+                // This is equivalent to the Python expression “list(object)”
+                PyList list2 = PyList.AsList(pyList);
+
+                pyList.Sort();
+            }
+        }
+
+        public void TestScope()
+        {
+            using (Py.GIL())
+            {
+                PyInt pyInt = new PyInt(42L);
+                long value1 = pyInt.ToInt64();
+                long value2 = pyInt.As<long>();
+
+                PyString pyString = new PyString("Hello, Python!");
+
+                PyFloat pyFloat = new PyFloat(3.14);
+
+                var items1 = new PyObject[] { new PyInt(1), new PyInt(2), new PyInt(3) };
+                PyList pyList = new PyList(items1);
+
+                var items2 = new PyObject[] { new PyInt(1), new PyFloat(2.5), new PyString("test") };
+                PyTuple pyTuple = new PyTuple(items2);
+
+                using (PyModule scope = Py.CreateScope())
+                {
+                    scope.Set("my_int", pyInt);
+                    scope.Set("my_string", pyString);
+                    scope.Set("my_float", pyFloat);
+                    scope.Set("my_list", pyList);
+                    scope.Set("my_tuple", pyTuple);
+
+                    string code = """
+
+                        print(f'my_int: {my_int}, my_string: {my_string}')
+
+                        # create a local variable
+                        my_int2 = my_int + 10
+
+                        # Modify the variable in the scope
+                        my_int = 123
+
+                        """;
+
+                    PyDict locals = new PyDict();
+
+                    // Execute the code within the scope, passing the locals dictionary
+                    // This allows you to retrieve variables defined in the executed code (like my_int2)
+                    scope.Exec(code, locals);
+
+                    if (locals.HasKey("my_int"))
+                    {
+                        PyInt myInt2 = locals.GetItem("my_int").As<PyInt>();
+                        Console.WriteLine($"my_int from locals: {myInt2.ToInt64()}");
+                    }
+
+                    if (locals.HasKey("my_int2"))
+                    {
+                        PyInt myInt2 = locals.GetItem("my_int2").As<PyInt>();
+                        Console.WriteLine($"my_int2 from locals: {myInt2.ToInt64()}");
+                    }
+
+                    // Get 42
+                    if (scope.TryGet("my_int", out PyObject? myInt2Obj))
+                    {
+                        PyInt myInt2 = myInt2Obj!.As<PyInt>();
+                        Console.WriteLine($"my_int after execution: {myInt2.ToInt64()}");
+                    }
+
+                    // Get 42
+                    if (scope.TryGet<long?>("my_int", out long? myLong2))
+                    {
+                        Console.WriteLine($"my_int after execution: {myLong2}");
+                    }
+
+                    // Get 42
+                    if (scope.Contains("my_int"))
+                    {
+                        PyInt myInt2 = scope.Get("my_int").As<PyInt>();
+                        Console.WriteLine($"my_int after execution: {myInt2.ToInt64()}");
+                    }
+
+                    // Get 42
+                    if (scope.Contains("my_int"))
+                    {
+                        long myLong1 = scope.Get<long>("my_int");
+                        Console.WriteLine($"my_int after execution: {myLong1}");
+                    }
+
+                    
+
+                    PyDict variables = scope.Variables();
+                }
+            }
+        }
+
+
         public void Test3()
         {
             // create a person object
@@ -82,6 +208,12 @@ namespace TestPythonNet
                 {
                     // convert the Person object to a PyObject
                     PyObject pyPerson = person.ToPython();
+
+                    PyDict pyDict = new PyDict();
+                    pyDict.SetItem("key1", new PyString("value1"));
+                    pyDict.SetItem("key2", new PyInt(42));
+
+                    scope.Set("pyDict", pyDict);
 
                     // create a Python variable "person"
                     scope.Set("person", pyPerson);

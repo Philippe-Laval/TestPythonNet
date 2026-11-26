@@ -15,8 +15,15 @@ namespace TestPythonNet
             // 2. Initialiser le moteur Python
             PythonEngine.Initialize();
             PythonEngine.BeginAllowThreads();
+            // Enable GIL debugging assistance
+            PythonEngine.DebugGIL = true;
 
             PythonNetExample example = new PythonNetExample();
+
+            example.TestScope();
+            example.TestPyTuple();
+            example.TestPyList();
+
             example.Test1();
             example.Test3();
             example.ExecutePythonCode();
