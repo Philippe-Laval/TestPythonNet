@@ -55,8 +55,10 @@ result = m.sqrt(25)
         {
             using (Py.GIL())
             {
+                // Create a Python module named "calculator" in a scope
                 using var module = Py.CreateScope("calculator");
 
+                // Define functions in the module
                 module.Exec(
 """
 def add(a, b):

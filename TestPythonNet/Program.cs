@@ -22,6 +22,18 @@ namespace TestPythonNet
             PrimitivesExample primitivesExample = new PrimitivesExample();
             primitivesExample.TestPyTuple();
             primitivesExample.TestPyList();
+            primitivesExample.TestPyDict();
+
+            PythonNetExample example = new PythonNetExample();
+
+            example.TestChangeSysPathThenInstanciatePythonObjectAndUseIt();
+            example.TestImportNumpy();
+            example.TestToPython();
+            example.ExecutePythonCode();
+
+            SqlglotExample sqlglotExample = new SqlglotExample();
+            sqlglotExample.ExecuteSqlglot2();
+            sqlglotExample.ExecuteSqlglot();
 
             PySequenceExample pySequenceExample = new PySequenceExample();
             pySequenceExample.TestPySequence1();
@@ -68,15 +80,6 @@ namespace TestPythonNet
             exchangeExample.TestSimplerAccessUsingDynamic();
             exchangeExample.TestConvertAPythonObjectToACharpObject();
 
-            PythonNetExample example = new PythonNetExample();
-
-            example.Test1();
-            example.Test3();
-            example.ExecutePythonCode();
-            example.ExecuteSqlglot2();
-            example.ExecuteSqlglot();
-
-            // Test1();
 
             try
             {
@@ -90,7 +93,7 @@ namespace TestPythonNet
             }
         }
 
-        static void Test1()
+        static void TestLauchingPythonWithProcess()
         {
             BokehPlot bokeh = new BokehPlot(filePath: "C:/myplots/myplot");
 

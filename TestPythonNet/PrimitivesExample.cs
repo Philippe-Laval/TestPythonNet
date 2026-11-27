@@ -39,5 +39,31 @@ namespace TestPythonNet
                 pyList.Sort();
             }
         }
+
+        public void TestPyDict()
+        {
+            using (Py.GIL())
+            {
+                PyInt pyInt = new PyInt(42L);
+                long value1 = pyInt.ToInt64();
+                long value2 = pyInt.As<long>();
+
+                PyString pyString = new PyString("Hello, Python!");
+
+                PyFloat pyFloat = new PyFloat(3.14);
+
+                var items1 = new PyObject[] { new PyInt(1), new PyInt(2), new PyInt(3) };
+                PyList pyList = new PyList(items1);
+
+                var items2 = new PyObject[] { new PyInt(1), new PyFloat(2.5), new PyString("test") };
+                PyTuple pyTuple = new PyTuple(items2);
+
+                PyDict pyDict = new PyDict();
+                pyDict.SetItem("key1", new PyFloat(1.1));
+                pyDict.SetItem("key2", new PyInt(1));
+
+            }
+        }
+
     }
 }
