@@ -6,12 +6,12 @@ namespace DotNetLibrary
 {
     public class InformationProvider
     {
-        public Response GetResponse()
+        public Response GetResponse(Message message)
         {
             return new Response
             {
-                StatusCode = 200,
-                Message = "Hello from .NET!"
+                StatusCode = message.StatusCode,
+                Message = $"received : {message.Information}"
             };
         }
     }

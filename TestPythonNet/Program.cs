@@ -17,6 +17,8 @@ namespace TestPythonNet
             PythonEngine.BeginAllowThreads();
             // Enable GIL debugging assistance
             //PythonEngine.DebugGIL = true;
+            Console.WriteLine($"Python {PythonEngine.PythonPath}");
+            Console.WriteLine($"Python {PythonEngine.PythonHome}");
 
 
             PrimitivesExample primitivesExample = new PrimitivesExample();
@@ -27,6 +29,7 @@ namespace TestPythonNet
             PythonNetExample example = new PythonNetExample();
 
             example.TestChangeSysPathThenInstanciatePythonObjectAndUseIt();
+            example.TestUsingCsharpObjectInDll();
             example.TestImportNumpy();
             example.TestToPython();
             example.ExecutePythonCode();

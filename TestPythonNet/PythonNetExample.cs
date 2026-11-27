@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Text;
+using DotNetLibrary;
 
 // https://github.com/pythonnet/pythonnet#embedding-python-in-net
 
@@ -33,7 +34,12 @@ namespace TestPythonNet
                     "PythonFiles");
 
                 dynamic sys = Py.Import("sys");
-                sys.path.append(pythonFilesPath);
+                Console.WriteLine($"sys.path before: {sys.path}");
+                if (!(bool)sys.path.__contains__(pythonFilesPath))
+                {
+                    sys.path.append(pythonFilesPath);
+                }
+                Console.WriteLine($"sys.path after: {sys.path}");
 
                 dynamic calc = Py.Import("calculator");
                 // Create an instance of the Calculator class
@@ -42,6 +48,40 @@ namespace TestPythonNet
                 // Call the AddInPython method
                 int result = calcObject.AddInPython(5, 10);
                 Console.WriteLine($"Result of adding in Python: {result}");
+            }
+        }
+
+        public void TestUsingCsharpObjectInDll()
+        {
+            using (Py.GIL())
+            {
+                // Import the Python file
+
+                string pythonFilesPath = Path.Combine(
+                    AppContext.BaseDirectory,
+                    "PythonFiles");
+
+                dynamic sys = Py.Import("sys");
+                Console.WriteLine($"sys.path before: {sys.path}");
+                if (!(bool)sys.path.__contains__(pythonFilesPath))
+                {
+                    sys.path.append(pythonFilesPath);
+                }
+                Console.WriteLine($"sys.path after: {sys.path}");
+
+                dynamic calling = Py.Import("calling_csharp");
+                // Call the python functions
+                // Note that we can add breakpoints in the C# code (DotNetLibrary.Calculator).
+                dynamic r1 = calling.add(2, 1);
+                dynamic r2 = calling.sub(2, 1);
+
+                Message message  = new Message
+                {
+                    StatusCode = 200,
+                    Information = "Hello from C#"
+                };
+                dynamic response = calling.get_response(message);
+                Console.WriteLine($"Response from C#: StatusCode={response.StatusCode}, Information={response.Message}");
             }
         }
 
