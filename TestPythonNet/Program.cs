@@ -58,6 +58,16 @@ namespace TestPythonNet
             bufferExample.TestBufferWithNumpyAndSpan();
             bufferExample.TestBufferWithNumpyAndSpan2();
 
+            ExchangeExample exchangeExample = new ExchangeExample();
+            exchangeExample.TestUsingASharpObjectWithPython();
+            exchangeExample.TestCreatingANewCSharpObjectFromPython();
+            exchangeExample.CallPythonFonctionWithCSharpObject();
+            exchangeExample.PassingListOfCSharpObjectsToPython();
+            exchangeExample.ConvertingANativePythonObjectToCsharp();
+            exchangeExample.TestUsingPythonObjectsFromCsharp();
+            exchangeExample.TestSimplerAccessUsingDynamic();
+            exchangeExample.TestConvertAPythonObjectToACharpObject();
+
             PythonNetExample example = new PythonNetExample();
 
             example.Test1();

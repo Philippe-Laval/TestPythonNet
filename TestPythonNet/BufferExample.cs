@@ -5,6 +5,9 @@ using System.Text;
 
 namespace TestPythonNet
 {
+    /// <summary>
+    /// Shows how to pass array between python and C# without converting each value
+    /// </summary>
     public class BufferExample
     {
         /// <summary>

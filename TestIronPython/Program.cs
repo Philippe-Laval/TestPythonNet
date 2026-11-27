@@ -100,9 +100,11 @@ namespace TestIronPython
 
             // Add the directory containing the Python file to the search paths
             ICollection<string> searchPaths = engine.GetSearchPaths();
+            
             searchPaths.Add(Path.Combine(
                 AppContext.BaseDirectory,
                 "PythonFiles"));
+            
             engine.SetSearchPaths(searchPaths);
 
             // Import the Python file
