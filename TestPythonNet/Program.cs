@@ -4,7 +4,7 @@ namespace TestPythonNet
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // 1. Indiquer le chemin vers la DLL Python (à adapter selon votre OS/version)
             // Windows : @"C:\Users\VotreNom\AppData\Local\Programs\Python\Python312\python312.dll"
@@ -19,6 +19,26 @@ namespace TestPythonNet
             //PythonEngine.DebugGIL = true;
             Console.WriteLine($"Python {PythonEngine.PythonPath}");
             Console.WriteLine($"Python {PythonEngine.PythonHome}");
+
+
+            DynamicExample dynamicExample = new DynamicExample();
+            dynamicExample.Test1();
+            dynamicExample.Test2();
+            dynamicExample.Test3();
+            dynamicExample.Test4();
+            dynamicExample.Test5();
+            dynamicExample.Test6();
+            dynamicExample.Test7();
+            dynamicExample.Test8();
+            dynamicExample.Test9();
+            dynamicExample.Test10();
+            dynamicExample.Test11();
+            dynamicExample.Test12();
+            dynamicExample.Test13();
+            dynamicExample.Test14();
+            dynamicExample.Test15();
+            await dynamicExample.Test16(25);
+            dynamicExample.Test17();
 
 
             PrimitivesExample primitivesExample = new PrimitivesExample();
@@ -83,6 +103,7 @@ namespace TestPythonNet
             exchangeExample.TestSimplerAccessUsingDynamic();
             exchangeExample.TestConvertAPythonObjectToACharpObject();
 
+          
 
             try
             {
