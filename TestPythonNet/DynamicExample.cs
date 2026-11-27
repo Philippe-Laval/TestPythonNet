@@ -216,13 +216,13 @@ namespace TestPythonNet
                 bool enabled = (bool)config["enabled"];
 
                 // Modify a value
-                config["port"] = 9090;
+                config["port"] = new PyInt(9090);
 
                 // Add a new value
-                config["timeout"] = 5000;
+                config["timeout"] = new PyInt(5000);
 
                 // Access a potentially missing key
-                dynamic timeout = config.get("timeout", 1000);
+                dynamic timeout = config.get("timeout", new PyInt(1000));
 
                 Console.WriteLine(config);
             }
@@ -410,11 +410,19 @@ def calculate(a, b):
                 dynamic module = Py.Import("calculator2");
 
                 dynamic result = module.find_device();
-
-                if (((PyObject)result).IsNone())
+                if (result == null || result is PyObject pyObj && pyObj.IsNone())
                 {
                     Console.WriteLine("Device not found");
                 }
+                else
+                {
+                    Console.WriteLine($"Device found: {result}");
+                }
+
+                //if (((PyObject)result).IsNone())
+                //{
+                //    Console.WriteLine("Device not found");
+                //}
             }
         }
 
