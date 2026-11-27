@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Text;
 using DotNetLibrary;
+using TestPythonNet.Extensions;
+
+// Embedding Python into .NET
+// https://pythonnet.github.io/pythonnet/dotnet.html
 
 // https://github.com/pythonnet/pythonnet#embedding-python-in-net
 
@@ -82,6 +86,14 @@ namespace TestPythonNet
                 };
                 dynamic response = calling.get_response(message);
                 Console.WriteLine($"Response from C#: StatusCode={response.StatusCode}, Information={response.Message}");
+
+                dynamic r3 = calling.test();
+                PyTuple pyTuple = new PyTuple(r3);
+                (dynamic drives, dynamic name) = pyTuple;
+                foreach (dynamic drive in drives)
+                {
+                    Console.WriteLine($"Drive: {drive}");
+                }
             }
         }
 
