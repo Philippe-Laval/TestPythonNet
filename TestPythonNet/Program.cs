@@ -18,43 +18,47 @@ namespace TestPythonNet
             // Enable GIL debugging assistance
             //PythonEngine.DebugGIL = true;
 
+
+            PrimitivesExample primitivesExample = new PrimitivesExample();
+            primitivesExample.TestPyTuple();
+            primitivesExample.TestPyList();
+
+            PySequenceExample pySequenceExample = new PySequenceExample();
+            pySequenceExample.TestPySequence1();
+            pySequenceExample.TestPySequence2();
+            pySequenceExample.TestPySequence3();
+            pySequenceExample.TestPySequence4();
+            pySequenceExample.TestPySequence5();
+            pySequenceExample.TestPySequence6();
+            pySequenceExample.TestPySequence7();
+            pySequenceExample.TestPySequence8();
+            pySequenceExample.TestPySequence9();
+            pySequenceExample.TestPySequence10();
+            pySequenceExample.TestPySequence11();
+            pySequenceExample.TestPySequence12();
+
+            ExecOrEvalExample execOrEvalExample = new ExecOrEvalExample();
+            execOrEvalExample.TestExec();
+            execOrEvalExample.TestEval();
+            execOrEvalExample.TestExecuteWithEval();
+            execOrEvalExample.TestExecuteWithFile();
+
+            NewScopeExample newScopeExample = new NewScopeExample();
+            newScopeExample.TestNewScope();
+
+            ImportExample importExample = new ImportExample();
+            importExample.TestImportName();
+            importExample.TestImportPyModule();
+            importExample.TestImportPyObject();
+            importExample.TestImportAll();
+
+            BufferExample bufferExample = new BufferExample();
+            bufferExample.TestPyBuffer();
+            bufferExample.TestBufferWithNumpy();
+            bufferExample.TestBufferWithNumpyAndSpan();
+            bufferExample.TestBufferWithNumpyAndSpan2();
+
             PythonNetExample example = new PythonNetExample();
-
-            example.TestPyTuple();
-            example.TestPyList();
-
-            example.TestPySequence1();
-            example.TestPySequence2();
-            example.TestPySequence3();
-            example.TestPySequence4();
-            example.TestPySequence5();
-            example.TestPySequence6();
-            example.TestPySequence7();
-            example.TestPySequence8();
-            example.TestPySequence9();
-            example.TestPySequence10();
-            example.TestPySequence11();
-            example.TestPySequence12();
-
-            example.TestExec();
-            example.TestEval();
-
-            example.TestExecuteWithEval();
-            example.TestExecuteWithFile();
-
-            example.TestNewScope();
-
-            example.TestImportName();
-            example.TestImportPyModule();
-            example.TestImportPyObject();
-
-            example.TestImportAll();
-
-            example.TestPyBuffer();
-            example.TestBufferWithNumpy();
-            example.TestBufferWithNumpyAndSpan();
-            example.TestBufferWithNumpyAndSpan2();
-
 
             example.Test1();
             example.Test3();
